@@ -1,0 +1,16 @@
+{
+  "name": "world-news-ai-agent",
+  "version": "1.0.0",
+  "description": "Fetches top world news (excluding Bangladesh and Canada), summarizes with Claude, and emails a daily digest.",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
+    "dotenv": "^16.4.5",
+    "nodemailer": "^6.9.15",
+    "rss-parser": "^3.13.0"
+  }
+}
