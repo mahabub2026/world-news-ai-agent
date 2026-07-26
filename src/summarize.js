@@ -31,7 +31,7 @@ function buildPrompt(candidates) {
 
 Below are recent headlines pulled from major international news outlets (BBC World News, Al Jazeera, The Guardian World, NPR World, Google News World). Some may be duplicates covering the same story, low-importance filler, or non-news content. Your job:
 
-1. Select the 10 most significant, genuinely newsworthy world stories -- major international politics, conflicts, economy, disasters, diplomacy, etc. -- EXCLUDING anything primarily about Bangladesh or Canada.
+1. Select up to 10 of the most significant, genuinely newsworthy world stories -- major international politics, conflicts, economy, disasters, diplomacy, etc. -- EXCLUDING anything primarily about Bangladesh or Canada. If fewer than 10 genuinely newsworthy candidates are available, return as many as are available (even just 1) -- never pad with filler.
 2. If two entries clearly cover the same underlying story, treat them as one and pick whichever index has the better title/snippet.
 3. For each selected story, write a clear, neutral 2-3 sentence summary based ONLY on the title and snippet given below. Do not invent facts, numbers, or quotes that are not implied by the source text.
 4. Keep each summary objective and concise -- no editorializing.
@@ -42,10 +42,19 @@ Candidates:
 
 ${list}
 
-Respond with ONLY a JSON array (no markdown fences, no preamble/explanation) of exactly 10 objects, ordered by importance, in this exact shape. "index" must be the bracketed candidate number [n] above:
+CRITICAL: Respond with ONLY a JSON array -- no markdown fences, no preamble, no explanation, no commentary before or after it, even if there is only one candidate or the candidates seem limited. Your entire response must be valid JSON and nothing else. "index" must be the bracketed candidate number [n] above:
 [
   {"index": 1, "summary": "2-3 sentence summary"}
 ]`;
+}
+
+function extractJsonArray(text) {
+  const start = text.indexOf("[");
+  const end = text.lastIndexOf("]");
+  if (start === -1 || end === -1 || end < start) {
+    return text.trim();
+  }
+  return text.slice(start, end + 1);
 }
 
 async function summarizeTopStories(candidates) {
@@ -67,13 +76,14 @@ async function summarizeTopStories(candidates) {
     throw new Error("Claude response did not contain a text block.");
   }
 
-  const cleaned = textBlock.text.replace(/^```json\s*|^```\s*|```$/gm, "").trim();
+  const withoutFences = textBlock.text.replace(/^```json\s*|^```\s*|```$/gm, "").trim();
+  const cleaned = extractJsonArray(withoutFences);
 
   let picks;
   try {
     picks = JSON.parse(cleaned);
   } catch (err) {
-    throw new Error(`Failed to parse Claude's JSON response: ${err.message}\nRaw: ${cleaned}`);
+    throw new Error(`Failed to parse Claude's JSON response: ${err.message}\nRaw: ${textBlock.text}`);
   }
 
   if (!Array.isArray(picks) || picks.length === 0) {
